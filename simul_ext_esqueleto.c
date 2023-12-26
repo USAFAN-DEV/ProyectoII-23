@@ -62,14 +62,48 @@ int main(){
          Directorio(&directorio,&ext_blq_inodos);
          continue;
       }
+      else if(strcmp(orden,"copy")==0){
+         Grabarinodosydirectorio(&directorio,&ext_blq_inodos,fent);
+         GrabarByteMaps(&ext_bytemaps,fent);
+         GrabarSuperBloque(&ext_superblock,fent);
+         if (grabardatos)
+            GrabarDatos(&memdatos,fent);
+         grabardatos = 0;
+      }
+      else if(strcmp(orden,"rename")==0){
+         Grabarinodosydirectorio(&directorio,&ext_blq_inodos,fent);
+         GrabarByteMaps(&ext_bytemaps,fent);
+         GrabarSuperBloque(&ext_superblock,fent);
+         if (grabardatos)
+            GrabarDatos(&memdatos,fent);
+         grabardatos = 0;
+      }
+      else if(strcmp(orden,"imprimir")==0){
+
+      }
+      else if(strcmp(orden,"remove")==0){
+         Grabarinodosydirectorio(&directorio,&ext_blq_inodos,fent);
+         GrabarByteMaps(&ext_bytemaps,fent);
+         GrabarSuperBloque(&ext_superblock,fent);
+         if (grabardatos)
+            GrabarDatos(&memdatos,fent);
+         grabardatos = 0;
+      }
+      else if(strcmp(orden,"imprimir")==0){
+
+      }
+      else if(strcmp(orden,"info")==0){
+
+      }
+      else if(strcmp(orden,"bytemaps")==0){
+
+      }
+      else{
+         printf("ERROR: comando ilegal [bytempas,copy,dir,info,imprimir,rename,remove,salir]\n");
+      }
       //...
       // Escritura de metadatos en comandos rename, remove, copy     
-      Grabarinodosydirectorio(&directorio,&ext_blq_inodos,fent);
-      GrabarByteMaps(&ext_bytemaps,fent);
-      GrabarSuperBloque(&ext_superblock,fent);
-      if (grabardatos)
-         GrabarDatos(&memdatos,fent);
-      grabardatos = 0;
+      
       //Si el comando es salir se habrán escrito todos los metadatos
       //faltan los datos y cerrar
       if (strcmp(orden,"salir")==0){
@@ -81,8 +115,9 @@ int main(){
 }
 
 void Printbytemaps(EXT_BYTE_MAPS *ext_bytemaps){
-   
-
+   printf("%d\n",ext_bytemaps->bmap_bloques);
+   printf("%d\n",ext_bytemaps->bmap_inodos);
+   printf("%d\n",ext_bytemaps->bmap_relleno);
 }
 int ComprobarComando(char *strcomando, char *orden, char *argumento1, char *argumento2){
 //Aqui lo que tiene que hacer es recibir el comando la orden registra si es dir, imprimir o lo que sea y despues argumento 1 y 2 es por si 
@@ -102,14 +137,17 @@ int ComprobarComando(char *strcomando, char *orden, char *argumento1, char *argu
    else if(strcmp(orden,"info")==0 || strcmp(orden,"bytemaps")==0){
       valor=0;
    }
-   else{
-      printf("ERROR: comando ilegal [bytempas,copy,dir,info,imprimir,rename,remove,salir]\n");
-   }
    return valor;
    
 }
 void LeeSuperBloque(EXT_SIMPLE_SUPERBLOCK *psup){
-   printf("%d\n%d\n",psup->s_block_size,psup->s_blocks_count);
+   printf("%d\n",psup->s_block_size);
+   printf("%d\n",psup->s_blocks_count);
+   printf("%d\n",psup->s_first_data_block);
+   printf("%d\n",psup->s_free_blocks_count);
+   printf("%d\n",psup->s_free_inodes_count);
+   printf("%d\n",psup->s_inodes_count);
+   printf("%d\n",psup->s_relleno);
 
 }
 int BuscaFich(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, char *nombre){
