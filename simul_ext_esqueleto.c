@@ -1,6 +1,7 @@
-#include<stdio.h>
-#include<string.h>
-#include<ctype.h>
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+#include <stdlib.h>
 #include "cabeceras.h"
 
 #define LONGITUD_COMANDO 100
@@ -17,6 +18,7 @@ void Grabarinodosydirectorio(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos
 void GrabarByteMaps(EXT_BYTE_MAPS *ext_bytemaps, FILE *fich);
 void GrabarSuperBloque(EXT_SIMPLE_SUPERBLOCK *ext_superblock, FILE *fich);
 void GrabarDatos(EXT_DATOS *memdatos, FILE *fich);
+char* LeelineaDinamica();
 
 int main(){
 
@@ -51,12 +53,16 @@ int main(){
 
    // Bucle de tratamiento de comandos
    for (;;){
-		do {
-		   printf ("\n>> ");
-		   fflush(stdin); //Limpiar el buffer
-		   fgets(*comando, LONGITUD_COMANDO, stdin);
-		}
-      while (ComprobarComando(*comando,*orden,*argumento1,*argumento2) !=0);
+      do {
+         char c;
+         int cont = 0;
+         printf (">> ");
+         fflush(stdin);
+         *comando = LeelineaDinamica();
+         printf("%s", *comando);
+         
+      } while (1);//ComprobarComando(*comando,*orden,*argumento1,*argumento2) !=0
+
 	   if (strcmp(*orden,"dir")==0) {
          Directorio(directorio,&ext_blq_inodos);
          continue;
@@ -126,24 +132,28 @@ void Printbytemaps(EXT_BYTE_MAPS *ext_bytemaps){
 int ComprobarComando(char *strcomando, char *orden, char *argumento1, char *argumento2){
 //Aqui lo que tiene que hacer es recibir el comando la orden registra si es dir, imprimir o lo que sea y despues argumento 1 y 2 es por si 
 //tiene que hacer cp A.txt D.txt
+   printf("!He entrado a comprpobar comando!@@@##@##@#");
    int valor=1;
    char *token;
-   orden=strtok(strcomando," ");
-   if(strcmp(orden,"copy")==0 || strcmp(orden,"rename")==0){
-      argumento1=strtok(NULL," ");
-      argumento2=strtok(NULL," ");
-      valor=0;
-   }
-   else if(strcmp(orden,"imprimir")==0 || strcmp(orden,"remove")==0){
-      argumento1=strtok(NULL," ");
-      valor=0;
-   }
-   else if(strcmp(orden,"info")==0 || strcmp(orden,"bytemaps")==0){
-      valor=0;
-   }
-   return valor;
-   
+
+      orden=strtok(strcomando," ");
+      if(strcmp(orden,"copy")==0 || strcmp(orden,"rename")==0){
+         argumento1=strtok(NULL," ");
+         argumento2=strtok(NULL," ");
+         valor=0;
+      }
+      else if(strcmp(orden,"imprimir")==0 || strcmp(orden,"remove")==0){
+         argumento1=strtok(NULL," ");
+         valor=0;
+      }
+      else if(strcmp(orden,"info")==0 || strcmp(orden,"bytemaps")==0){
+         valor=0;
+      }
+
+      return valor;
 }
+
+
 void LeeSuperBloque(EXT_SIMPLE_SUPERBLOCK *psup){
    printf("Bloque %d Bytes\ninodos particion = %d\ninodos libres = %d\nBloques particion = %d\nBloques libres = %d\nPrimer bloque de datos = %d",psup->s_block_size, psup->s_inodes_count, psup->s_free_inodes_count, psup->s_blocks_count, psup->s_free_blocks_count, psup->s_first_data_block);
 
@@ -184,4 +194,21 @@ void GrabarSuperBloque(EXT_SIMPLE_SUPERBLOCK *ext_superblock, FILE *fich){
 void GrabarDatos(EXT_DATOS *memdatos, FILE *fich){
 
 
+}
+
+char* LeelineaDinamica(){
+    char caracter;
+    int contador=0,numbloque=1;
+    char *linea;
+    linea=(char*)malloc(10);
+    while((caracter=getchar())!='\n'){
+        if(contador>=numbloque * 10){
+            numbloque++;
+            linea=(char*)realloc(linea,numbloque * 10);
+        }
+        linea[contador]=caracter;
+        contador++;
+    }
+    linea[contador]='\0';
+    return linea;
 }
