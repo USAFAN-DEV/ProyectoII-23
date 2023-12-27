@@ -1,22 +1,35 @@
 #include <stdio.h>
-#include "cabeceras.h"
+#include <string.h>
+#include <stdlib.h>
+
+#define LONGITUD_COMANDO 100
 
 int main(){
 
-    FILE *fentrada;
-    int bytesread;
-    typedef struct {
-        char nombre[12];
-        int nBTC;
-    } T_BTC;
-
-    T_BTC regBTC;
-
-    fentrada = fopen("particion.bin", "rb");
-    if(fentrada != NULL){
-        while((bytesread = fread(&regBTC, sizeof(T_BTC), 1, fentrada)) > 0){
-            printf("bitcoins: %d\n",regBTC.nBTC);
-        }
+    char *comando[LONGITUD_COMANDO];
+    
+    for (int i = 0; i < LONGITUD_COMANDO; i++) {
+        comando[i] = malloc(100 * sizeof(char));  // Reserva memoria para cada cadena
     }
-    fclose(fentrada);
+
+    printf(">> ");
+    scanf("%s", comando[0]);
+    while (getchar() != '\n');  // Limpiar el buffer de entrada
+    printf("%s\n", comando[0]);
+
+     if(strcmp(comando[0], "hola") == 0){
+        printf("Comando: %s", comando[0]);
+    }
+    else{
+        printf("Comando erroneo");
+    }
+
+    // Liberar memoria al final del programa
+    for (int i = 0; i < LONGITUD_COMANDO; i++) {
+        free(comando[i]);
+    }
+
+    return 0;
+
 }
+

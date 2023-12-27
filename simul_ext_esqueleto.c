@@ -37,6 +37,7 @@ int main(){
    EXT_DATOS datosfich[MAX_BLOQUES_PARTICION]; 
    int entradadir;
    int grabardatos;
+   int contadorComandos = -1; //Inicializado a -1 en vez de a 0 por donde empezamos a aumentar el contador
    FILE *fent;
    
    // Lectura del fichero completo de una sola vez
@@ -51,18 +52,31 @@ int main(){
    memcpy(&directorio,(EXT_ENTRADA_DIR *)&datosfich[3], SIZE_BLOQUE);
    memcpy(&memdatos,(EXT_DATOS *)&datosfich[4],MAX_BLOQUES_DATOS*SIZE_BLOQUE);
 
+   //Reserva de memoria dinamica
+   for (int i = 0; i < LONGITUD_COMANDO; i++) {
+      comando[i] = malloc(100 * sizeof(char)); 
+      orden[i] = malloc(100 * sizeof(char)); 
+      argumento1[i] = malloc(100 * sizeof(char)); 
+      argumento2[i] = malloc(100 * sizeof(char)); 
+   }
+
    // Bucle de tratamiento de comandos
    for (;;){
       do {
-         char c;
          int cont = 0;
-         printf (">> ");
-         fflush(stdin);
-         *comando = LeelineaDinamica();
-         printf("%s", *comando);
+         char c;
+         contadorComandos++;
+         printf ("\n>> ");
+         while((c = getchar()) != '\n'){
+            comando[contadorComandos][cont] = c;
+            cont++;
+         }
+         printf("El comando leido es: %s", comando[contadorComandos]);
          
-      } while (1);//ComprobarComando(*comando,*orden,*argumento1,*argumento2) !=0
+      } while(ComprobarComando(comando[contadorComandos],*orden,*argumento1,*argumento2) !=0);
 
+
+      /*
 	   if (strcmp(*orden,"dir")==0) {
          Directorio(directorio,&ext_blq_inodos);
          continue;
@@ -106,6 +120,7 @@ int main(){
       else{
          printf("ERROR: comando ilegal [bytempas,copy,dir,info,imprimir,rename,remove,salir]\n");
       }
+      */
       //...
       // Escritura de metadatos en comandos rename, remove, copy     
       
@@ -114,6 +129,13 @@ int main(){
       if (strcmp(*orden,"salir")==0){
          GrabarDatos(memdatos,fent);
          fclose(fent);
+         // Liberar memoria al final del programa
+         for (int i = 0; i < LONGITUD_COMANDO; i++) {
+            free(comando[i]);
+            free(orden[i]);
+            free(argumento1[i]);
+            free(argumento2[i]);
+         }
          return 0;
       }
    }
@@ -132,25 +154,48 @@ void Printbytemaps(EXT_BYTE_MAPS *ext_bytemaps){
 int ComprobarComando(char *strcomando, char *orden, char *argumento1, char *argumento2){
 //Aqui lo que tiene que hacer es recibir el comando la orden registra si es dir, imprimir o lo que sea y despues argumento 1 y 2 es por si 
 //tiene que hacer cp A.txt D.txt
-   printf("!He entrado a comprpobar comando!@@@##@##@#");
    int valor=1;
-   char *token;
 
-      orden=strtok(strcomando," ");
-      if(strcmp(orden,"copy")==0 || strcmp(orden,"rename")==0){
-         argumento1=strtok(NULL," ");
-         argumento2=strtok(NULL," ");
-         valor=0;
+   //Parseamos el comando
+   if((orden = strtok(strcomando, " ")) == NULL){
+      orden = strcomando;
+   }
+   else{
+      if((argumento1 = strtok(NULL, " ")) != NULL){
+         if((argumento2 = strtok(NULL, " ")) != NULL);
+         else{
+            argumento2 = NULL;
+         }
       }
-      else if(strcmp(orden,"imprimir")==0 || strcmp(orden,"remove")==0){
-         argumento1=strtok(NULL," ");
-         valor=0;
+      else{
+         argumento2 = NULL;
       }
-      else if(strcmp(orden,"info")==0 || strcmp(orden,"bytemaps")==0){
-         valor=0;
-      }
+   }
 
-      return valor;
+   printf("\nLa orden recibida es: %s", orden);
+   printf("\nEl argumento1 es: %s", argumento1);
+   printf("\nEl argumento2 es: %s\n", argumento2);
+
+
+  /*
+   if(strcmp(orden,"copy")==0 || strcmp(orden,"rename")==0){
+      printf("\nEl comando es copy o rename");
+      argumento1=strtok(NULL," ");
+      argumento2=strtok(NULL," ");
+      valor=0;
+   }
+   else if(strcmp(orden,"imprimir")==0 || strcmp(orden,"remove")==0){
+      printf("\nEl comando es imprimir o remove");
+      argumento1=strtok(NULL," ");
+      valor=0;
+   }
+   else if(strcmp(orden,"info")==0 || strcmp(orden,"bytemaps")==0){
+      printf("\nEl comando es info o bytemaps");
+      valor=0;
+   }
+   */
+
+   return valor;
 }
 
 
