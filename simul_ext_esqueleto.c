@@ -41,7 +41,6 @@ int main(){
    FILE *fent;
    
    // Lectura del fichero completo de una sola vez
-   //...
    
    fent = fopen("particion.bin","r+b");
    fread(&datosfich, SIZE_BLOQUE, MAX_BLOQUES_PARTICION, fent); //devuelve el número de elementos completos que lee la función
@@ -67,13 +66,26 @@ int main(){
          char c;
          contadorComandos++;
          printf ("\n>> ");
-         while((c = getchar()) != '\n'){
+         while((c = getchar()) != '\n' && cont < LONGITUD_COMANDO){
             comando[contadorComandos][cont] = c;
             cont++;
          }
-         printf("El comando leido es: %s", comando[contadorComandos]);
+         if(cont == 100){
+            printf("\nLa longitud maxima de un comando es %d", LONGITUD_COMANDO);
+         }
+         //printf("El comando leido es: %s", comando[contadorComandos]);
          
-      } while(ComprobarComando(comando[contadorComandos],*orden,*argumento1,*argumento2) !=0);
+      } while(ComprobarComando(comando[contadorComandos], orden[contadorComandos], argumento1[contadorComandos], argumento2[contadorComandos]) !=0);
+
+         /*printf("\nLa orden recibida es: %s", orden[contadorComandos]);
+         printf("\nEl argumento1 es: %s", argumento1[contadorComandos]);
+         printf("\nEl argumento2 es: %s\n", argumento2[contadorComandos]);*/
+
+      LeeSuperBloque(&ext_superblock);
+      Printbytemaps(&ext_bytemaps);
+      Directorio(directorio, &ext_blq_inodos);
+
+         
 
 
       /*
@@ -141,20 +153,10 @@ int main(){
    }
 }
 
-void Printbytemaps(EXT_BYTE_MAPS *ext_bytemaps){
-   printf("\nInodos: ");
-   for(int i = 0; i < MAX_INODOS; i++){
-      printf("%d ", ext_bytemaps->bmap_inodos[i]);
-   }
-   printf("\nBloques[0-25]: ");
-   for(int i = 1; i < 26; i++){
-      printf("%d ", ext_bytemaps->bmap_bloques[i]);
-   }
-}
 int ComprobarComando(char *strcomando, char *orden, char *argumento1, char *argumento2){
 //Aqui lo que tiene que hacer es recibir el comando la orden registra si es dir, imprimir o lo que sea y despues argumento 1 y 2 es por si 
 //tiene que hacer cp A.txt D.txt
-   int valor=1;
+   int valor = 1;
 
    //Parseamos el comando
    if((orden = strtok(strcomando, " ")) == NULL){
@@ -171,10 +173,6 @@ int ComprobarComando(char *strcomando, char *orden, char *argumento1, char *argu
          argumento2 = NULL;
       }
    }
-
-   printf("\nLa orden recibida es: %s", orden);
-   printf("\nEl argumento1 es: %s", argumento1);
-   printf("\nEl argumento2 es: %s\n", argumento2);
 
 
   /*
@@ -195,23 +193,57 @@ int ComprobarComando(char *strcomando, char *orden, char *argumento1, char *argu
    }
    */
 
-   return valor;
+   return 0;
 }
 
 
 void LeeSuperBloque(EXT_SIMPLE_SUPERBLOCK *psup){
+   //Funcion que se ejecuta con el comando info
+
    printf("Bloque %d Bytes\ninodos particion = %d\ninodos libres = %d\nBloques particion = %d\nBloques libres = %d\nPrimer bloque de datos = %d",psup->s_block_size, psup->s_inodes_count, psup->s_free_inodes_count, psup->s_blocks_count, psup->s_free_blocks_count, psup->s_first_data_block);
 
 }
+
+void Printbytemaps(EXT_BYTE_MAPS *ext_bytemaps){
+   //Funcion que se ejecuta con el comando bytemaps
+
+   printf("\nInodos: ");
+   for(int i = 0; i < MAX_INODOS; i++){
+      printf("%d ", ext_bytemaps->bmap_inodos[i]);
+   }
+   printf("\nBloques[0-25]: ");
+   for(int i = 1; i < 26; i++){
+      printf("%d ", ext_bytemaps->bmap_bloques[i]);
+   }
+}
+
+void Directorio(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos){
+   //Funcion que se ejecuta con el comando dir
+
+   for(int i = 1; i < MAX_FICHEROS; i++){ //La entrada 0 del directorio contiene el nombre "." y el numero de inodo 2
+
+      if(directorio[i].dir_inodo == 0xFFFF);
+      else{
+         printf("\n%s\ttamaño: %d\tinodo:%d\tbloques: ", directorio[i].dir_nfich, inodos->blq_inodos[directorio[i].dir_inodo].size_fichero, directorio[i].dir_inodo);
+         for(int j = 0; j < MAX_NUMS_BLOQUE_INODO; j++){
+            if(inodos->blq_inodos[i].i_nbloque[j] == 0xFFFF);
+            else{
+               printf("%d ", inodos->blq_inodos[i].i_nbloque[j]);
+            }
+         }
+      }
+      
+   }
+
+}
+
+
 int BuscaFich(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, char *nombre){
 
 
 
 }
-void Directorio(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos){
 
-
-}
 int Renombrar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, char *nombreantiguo, char *nombrenuevo, EXT_DATOS *memdatos, char *nombre){
 
 
