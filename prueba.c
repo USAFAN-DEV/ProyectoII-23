@@ -4,11 +4,20 @@
 
 #define LONGITUD_COMANDO 100
 
+void cambiarString(char* string){
+
+    for(int i = 0; i < LONGITUD_COMANDO; i++){
+        string[i] = 'a';
+    }
+
+}
+
 int main(){
 
-    char *comando[LONGITUD_COMANDO];
+    char comando[LONGITUD_COMANDO];
+    cambiarString(comando);
     
-    for (int i = 0; i < LONGITUD_COMANDO; i++) {
+    /*for (int i = 0; i < LONGITUD_COMANDO; i++) {
         comando[i] = malloc(100 * sizeof(char));  // Reserva memoria para cada cadena
     }
 
@@ -27,9 +36,13 @@ int main(){
     // Liberar memoria al final del programa
     for (int i = 0; i < LONGITUD_COMANDO; i++) {
         free(comando[i]);
-    }
+    }*/
+
+    printf("%s", comando);
 
     return 0;
 
 }
+
+
 
