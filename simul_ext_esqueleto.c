@@ -11,7 +11,7 @@ int ComprobarComando(char *strcomando, char **orden, char **argumento1, char **a
 void LeeSuperBloque(EXT_SIMPLE_SUPERBLOCK *psup);
 int BuscaFich(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, char *nombre);
 void Directorio(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos);
-int Renombrar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, char *nombreantiguo, char *nombrenuevo, EXT_DATOS *memdatos, char *nombre);
+int Renombrar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, char *nombreantiguo, char *nombrenuevo, EXT_DATOS *memdatos);
 int Borrar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, EXT_BYTE_MAPS *ext_bytemaps, EXT_SIMPLE_SUPERBLOCK *ext_superblock, char *nombre,  FILE *fich);
 int Copiar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, EXT_BYTE_MAPS *ext_bytemaps, EXT_SIMPLE_SUPERBLOCK *ext_superblock, EXT_DATOS *memdatos, char *nombreorigen, char *nombredestino,  FILE *fich);
 void Grabarinodosydirectorio(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, FILE *fich);
@@ -26,7 +26,6 @@ int main(){
 	char *orden;
 	char *argumento1;
 	char *argumento2;
-   char c;
 	 
    int i,j;
    unsigned long int m;
@@ -42,13 +41,17 @@ int main(){
    FILE *fent;
    
    //Lectura del fichero completo de una sola vez
-   fent = fopen("particion.bin","r+b");
+   fent = fopen("particion.bin","r+b"); //abrir archivo binario para lectura y grabacion
+   if(fent == NULL){
+      printf("\nEl archivo binario no existe. Revise que el nombre este bien escrito");
+      exit(0);
+   }
+
    fread(&datosfich, SIZE_BLOQUE, MAX_BLOQUES_PARTICION, fent); //devuelve el número de elementos completos que lee la función
-   
    memcpy(&ext_superblock,(EXT_SIMPLE_SUPERBLOCK *)&datosfich[0], SIZE_BLOQUE);
+   memcpy(&directorio,(EXT_ENTRADA_DIR *)&datosfich[3], SIZE_BLOQUE);
    memcpy(&ext_bytemaps,(EXT_BLQ_INODOS *)&datosfich[1], SIZE_BLOQUE);
    memcpy(&ext_blq_inodos,(EXT_BLQ_INODOS *)&datosfich[2], SIZE_BLOQUE);
-   memcpy(&directorio,(EXT_ENTRADA_DIR *)&datosfich[3], SIZE_BLOQUE);
    memcpy(&memdatos,(EXT_DATOS *)&datosfich[4],MAX_BLOQUES_DATOS*SIZE_BLOQUE);
 
    //Reserva de memoria dinamica
@@ -57,8 +60,6 @@ int main(){
    argumento1 = (char*)malloc(100*sizeof(char));
    argumento2 = (char*)malloc(100*sizeof(char));
 
-
-
    //Bucle de tratamiento de comandos
    for (;;){
 
@@ -66,11 +67,7 @@ int main(){
          contadorComandos = 0;
 
          printf ("\n>> ");
-         while((c = getchar()) != '\n' && contadorComandos < LONGITUD_COMANDO){
-            comando[contadorComandos]= c;
-            contadorComandos++;
-         }
-         comando[contadorComandos] = '\0';
+         comando = LeelineaDinamica();
 
          if(contadorComandos == 100){
             printf("\nLa longitud maxima de un comando es %d", LONGITUD_COMANDO);
@@ -86,6 +83,9 @@ int main(){
       }
       else if(strcmp(orden, "dir") == 0){
          Directorio(directorio, &ext_blq_inodos);
+      }
+      else if(strcmp(orden, "rename") == 0){
+         Renombrar(directorio, &ext_blq_inodos, argumento1, argumento2, memdatos);
       }
       /*
 	   if (strcmp(*orden,"dir")==0) {
@@ -176,7 +176,6 @@ int ComprobarComando(char *strcomando, char **orden, char **argumento1, char **a
 
       //Comprobamos el comando
       if(strcmp(*orden, "copy") == 0 || strcmp(*orden, "rename") == 0){
-         printf("\nEl comando es copy/rename\n");
          if(*argumento1 == NULL || *argumento2 == NULL){
             printf("\nERROR. El comando escrito necesita dos parámetros\n");
          }
@@ -185,7 +184,6 @@ int ComprobarComando(char *strcomando, char **orden, char **argumento1, char **a
          }
       }
       else if(strcmp(*orden,"imprimir")==0 || strcmp(*orden,"remove")==0){
-         printf("\nEl comando es imprimir/remove\n");
          if(*argumento1 == NULL || *argumento2 != NULL){
             printf("\nERROR. El comando escrito solo puede tener un parámetro\n");
          }
@@ -194,7 +192,6 @@ int ComprobarComando(char *strcomando, char **orden, char **argumento1, char **a
          }
       }
       else if(strcmp(*orden,"info") == 0 || strcmp(*orden,"bytemaps") == 0 || strcmp(*orden, "dir") == 0 || strcmp(*orden, "salir") == 0){
-         printf("\nEl comando es info/bytemaps\n");
          if(*argumento1 == NULL && *argumento2 == NULL){
             comandoCorrecto = 1;
          }
@@ -242,26 +239,66 @@ void Printbytemaps(EXT_BYTE_MAPS *ext_bytemaps){
    printf("\n");
 }
 
-void Directorio(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos){
-   //Funcion que se ejecuta con el comando dir
 
-   for(int i = 0; i < 24 /*MAX_FICHEROS*/; i++){ //La entrada 0 del directorio contiene el nombre "." y el numero de inodo 2
+void Directorio(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos) {
+   // Funcion que se ejecuta con el comando dir
 
-      /*if(directorio[i].dir_inodo == 0xFFFF);
-      else{
-         printf("\n%s\ttamaño: %d\tinodo:%d\tbloques: ", directorio[i].dir_nfich, inodos->blq_inodos[directorio[i].dir_inodo].size_fichero, directorio[i].dir_inodo);
-         for(int j = 0; j < MAX_NUMS_BLOQUE_INODO; j++){
-            //if(inodos->blq_inodos[i].i_nbloque[j] == 0);
-            //else{
-               printf("%d ", inodos->blq_inodos[i].i_nbloque[j]);
-            //}
+   for (int i = 1; i < MAX_FICHEROS; i++) {
+      if (directorio[i].dir_inodo == 0xFFFF) {
+         continue;
+      } else {
+         printf("\n%s\ttamaño: %u\tinodo:%u\tbloques: ", directorio[i].dir_nfich, inodos->blq_inodos[directorio[i].dir_inodo].size_fichero, directorio[i].dir_inodo);
+         for (int j = 0; j < MAX_NUMS_BLOQUE_INODO; j++) {
+            if (inodos->blq_inodos[directorio[i].dir_inodo].i_nbloque[j] == 0xFFFF) {
+               continue;
+            } else {
+               printf("%u ", inodos->blq_inodos[directorio[i].dir_inodo].i_nbloque[j]);
+            }
          }
-      }  */
+         printf("\n");
+      }
+   }
+}
 
-      printf("%d\n", inodos->blq_inodos[i].size_fichero);
+int Renombrar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, char *nombreantiguo, char *nombrenuevo, EXT_DATOS *memdatos){
+
+   //Por default, el fichero al que le queremos cambiar el nombre no existe y el nuevo nombre esta disponible
+   int existeFichero = 0;
+   int nombreDisponible = 1;
+   int renombrarPosible = 0;
+
+   int indexFichero = -1;
+
+   for(int i = 0; i < MAX_FICHEROS; i++){ //Comprobar que el nombre antiguo es el nombre de un fichero de nuestra particion
+      if(strcmp(nombreantiguo, directorio[i].dir_nfich) == 0){
+         existeFichero = 1; 
+         indexFichero = i;
+         i = MAX_FICHEROS; //para salir del bucle
+      }
+   }
+   if(existeFichero == 1){ //Si el fichero con el nombre antiguo existe, comprobar que el nombre nuevo no es el nombre de ningun fichero de nuestra particion
+      for(int i = 0; i < MAX_FICHEROS; i++){
+         if(strcmp(nombrenuevo, directorio[i].dir_nfich) == 0){
+            nombreDisponible = 0;
+            i = MAX_FICHEROS; //para salir del bucle
+         }
+      }
+   }
+   else;
+
+   if(existeFichero == 0){
+      printf("\nERROR. Fichero %s no encontrado\n", nombreantiguo);
+   }
+   else if(nombreDisponible == 0){
+      printf("\nERROR. El fichero %s ya existe\n", nombrenuevo);
+   }
+   else if(existeFichero == 1 && nombreDisponible == 1){
+      for(int i = 0; i < LEN_NFICH; i++){
+         directorio[indexFichero].dir_nfich[i] = nombrenuevo[i];
+      }
    }
 
-   printf("\n");
+   return indexFichero;
 
 }
 
@@ -272,10 +309,7 @@ int BuscaFich(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, char *nombre)
 
 }
 
-int Renombrar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, char *nombreantiguo, char *nombrenuevo, EXT_DATOS *memdatos, char *nombre){
 
-
-}
 int Borrar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, EXT_BYTE_MAPS *ext_bytemaps, EXT_SIMPLE_SUPERBLOCK *ext_superblock, char *nombre,  FILE *fich){
 
 
