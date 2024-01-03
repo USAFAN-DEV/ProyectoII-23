@@ -74,7 +74,6 @@ int main(){
          }
 
       } while(ComprobarComando(comando, &orden, &argumento1, &argumento2) !=1);
-
       if(strcmp(orden, "info") == 0){
          LeeSuperBloque(&ext_superblock);
       }
@@ -86,6 +85,9 @@ int main(){
       }
       else if(strcmp(orden, "rename") == 0){
          Renombrar(directorio, &ext_blq_inodos, argumento1, argumento2, memdatos);
+      }
+      else if(strcmp(orden, "copy") == 0){
+         Copiar(directorio,&ext_blq_inodos,&ext_bytemaps,&ext_superblock,memdatos,argumento1,argumento2,fent);
       }
       /*
 	   if (strcmp(*orden,"dir")==0) {
@@ -305,12 +307,55 @@ int BuscaFich(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, char *nombre)
 
 
 int Borrar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, EXT_BYTE_MAPS *ext_bytemaps, EXT_SIMPLE_SUPERBLOCK *ext_superblock, char *nombre,  FILE *fich){
-
+   if(BuscaFich(directorio,inodos,nombre)==-1);
 
 }
 int Copiar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, EXT_BYTE_MAPS *ext_bytemaps, EXT_SIMPLE_SUPERBLOCK *ext_superblock, EXT_DATOS *memdatos, char *nombreorigen, char *nombredestino,  FILE *fich){
-   
-
+   int contTextDatos=0;
+   int errorOrigen=0;
+   int indiceMemDatosBloqueOrigen;
+   int indiceOrigen;
+   int indiceBloqueDestino;
+   if((indiceOrigen=BuscaFich(directorio,inodos,nombreorigen))==-1){
+      printf("No existe el fichero origen, por favor, introduzca uno que exista en el directorio\n");
+      Directorio(directorio,inodos);
+      errorOrigen=1;
+   }
+   else{
+      int indiceInodoLibre=0;
+      for(int i = 1; (i < MAX_FICHEROS) && (indiceInodoLibre==0); i++){
+         if(directorio[i].dir_inodo==0xFFFF){
+            directorio[i].dir_inodo=i;
+            indiceInodoLibre=i;
+            printf("%d\n",indiceInodoLibre);
+         }
+      }
+      ext_bytemaps->bmap_inodos[indiceInodoLibre]=1;
+      inodos->blq_inodos[indiceInodoLibre].size_fichero=inodos->blq_inodos[directorio[indiceOrigen].dir_inodo].size_fichero;
+      strcpy(directorio[indiceInodoLibre].dir_nfich,nombredestino);
+      for (int j = 0; j < MAX_NUMS_BLOQUE_INODO; j++) {
+         if (inodos->blq_inodos[directorio[indiceOrigen].dir_inodo].i_nbloque[j] == 0xFFFF) {
+            continue;
+         } 
+         else {
+            for(int i=0;i<MAX_BLOQUES_PARTICION;i++){
+               if(ext_bytemaps->bmap_bloques[i]==0){
+                  indiceBloqueDestino=i;
+                  i=MAX_BLOQUES_PARTICION;
+               }
+            }
+            ext_bytemaps->bmap_bloques[indiceBloqueDestino]=1;
+            contTextDatos = 0;
+            indiceMemDatosBloqueOrigen = inodos->blq_inodos[directorio[indiceOrigen].dir_inodo].i_nbloque[j];
+            while(memdatos[indiceMemDatosBloqueOrigen - 4].dato[contTextDatos] != '\0'){
+               memdatos[indiceBloqueDestino-4].dato[contTextDatos]=memdatos[indiceMemDatosBloqueOrigen - 4].dato[contTextDatos];
+               contTextDatos++;
+            }
+            memdatos[indiceBloqueDestino-4].dato[contTextDatos]='\0';
+         }
+      }
+   }
+   return errorOrigen;
 }
 void Grabarinodosydirectorio(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, FILE *fich){
 
