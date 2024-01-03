@@ -12,7 +12,6 @@ void LeeSuperBloque(EXT_SIMPLE_SUPERBLOCK *psup);
 int BuscaFich(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, char *nombre);
 void Directorio(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos);
 int Renombrar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, char *nombreantiguo, char *nombrenuevo, EXT_DATOS *memdatos);
-int Imprimir(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, EXT_DATOS *memdatos, char* nombre);
 int Borrar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, EXT_BYTE_MAPS *ext_bytemaps, EXT_SIMPLE_SUPERBLOCK *ext_superblock, char *nombre,  FILE *fich);
 int Copiar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, EXT_BYTE_MAPS *ext_bytemaps, EXT_SIMPLE_SUPERBLOCK *ext_superblock, EXT_DATOS *memdatos, char *nombreorigen, char *nombredestino,  FILE *fich);
 void Grabarinodosydirectorio(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, FILE *fich);
@@ -264,15 +263,11 @@ void Directorio(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos) {
 int Renombrar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, char *nombreantiguo, char *nombrenuevo, EXT_DATOS *memdatos){
 
    //Por default, el fichero al que le queremos cambiar el nombre no existe y el nuevo nombre esta disponible
-   int existeFichero, nombreDisponible, renombrarPosible = 0;
+   int existeFichero = 0;
+   int nombreDisponible = 1;
+   int renombrarPosible = 0;
 
-   existeFichero = BuscaFich(directorio, inodos, nombreantiguo); // -1 si no lo encuentra, su indice si lo encuentra
-   nombreDisponible = BuscaFich(directorio, inodos, nombrenuevo);
-
-
-
-
-   /*
+   int indexFichero = -1;
 
    for(int i = 0; i < MAX_FICHEROS; i++){ //Comprobar que el nombre antiguo es el nombre de un fichero de nuestra particion
       if(strcmp(nombreantiguo, directorio[i].dir_nfich) == 0){
@@ -290,48 +285,28 @@ int Renombrar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, char *nombrea
       }
    }
    else;
-   */
 
-  printf("\nExisteFichero = %d, Nombre Disponible = %d", existeFichero, nombreDisponible);
-
-   if(existeFichero == -1){
+   if(existeFichero == 0){
       printf("\nERROR. Fichero %s no encontrado\n", nombreantiguo);
    }
-   else if(nombreDisponible != -1){
+   else if(nombreDisponible == 0){
       printf("\nERROR. El fichero %s ya existe\n", nombrenuevo);
    }
-   else if(existeFichero != -1 && nombreDisponible == -1){
-      renombrarPosible = 1;
-
+   else if(existeFichero == 1 && nombreDisponible == 1){
       for(int i = 0; i < LEN_NFICH; i++){
-         directorio[existeFichero].dir_nfich[i] = nombrenuevo[i];
+         directorio[indexFichero].dir_nfich[i] = nombrenuevo[i];
       }
    }
 
-   return renombrarPosible;
+   return indexFichero;
 
 }
-
-int Imprimir(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, EXT_DATOS *memdatos, char* nombre);
 
 
 int BuscaFich(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, char *nombre){
 
-   int indexFichero = -1;
 
-   for(int i = 0; i < MAX_FICHEROS; i++){
-
-      if(strcmp(nombre, directorio[i].dir_nfich) == 0){
-            indexFichero = i;
-            i = MAX_FICHEROS; //para salir del bucle
-      }
-         
-   }
-   return indexFichero;
-
-}  
-
-
+}
 
 
 int Borrar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, EXT_BYTE_MAPS *ext_bytemaps, EXT_SIMPLE_SUPERBLOCK *ext_superblock, char *nombre,  FILE *fich){
@@ -339,7 +314,7 @@ int Borrar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, EXT_BYTE_MAPS *e
 
 }
 int Copiar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, EXT_BYTE_MAPS *ext_bytemaps, EXT_SIMPLE_SUPERBLOCK *ext_superblock, EXT_DATOS *memdatos, char *nombreorigen, char *nombredestino,  FILE *fich){
-
+   
 
 }
 void Grabarinodosydirectorio(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, FILE *fich){
