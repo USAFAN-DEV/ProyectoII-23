@@ -358,6 +358,7 @@ int Borrar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, EXT_BYTE_MAPS *e
 
 }
 int Copiar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, EXT_BYTE_MAPS *ext_bytemaps, EXT_SIMPLE_SUPERBLOCK *ext_superblock, EXT_DATOS *memdatos, char *nombreorigen, char *nombredestino,  FILE *fich){
+   //ERROR BELOGAL.txt
    int contTextDatos=0;
    int errorOrigen=0;
    int indiceMemDatosBloqueOrigen;
@@ -370,10 +371,11 @@ int Copiar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, EXT_BYTE_MAPS *e
    }
    else{
       int indiceInodoLibre=0;
-      for(int i = 1; (i < MAX_FICHEROS) && (indiceInodoLibre==0); i++){
+      for(int i = 1; (i < MAX_FICHEROS); i++){
          if(directorio[i].dir_inodo==0xFFFF){
             directorio[i].dir_inodo=i;
             indiceInodoLibre=i;
+            i=MAX_FICHEROS;
             printf("%d\n",indiceInodoLibre);
          }
       }
@@ -397,10 +399,11 @@ int Copiar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, EXT_BYTE_MAPS *e
                }
             }
             ext_bytemaps->bmap_bloques[indiceBloqueDestino]=1;
+            inodos->blq_inodos[directorio[indiceInodoLibre].dir_inodo].i_nbloque[j]=indiceBloqueDestino;
             Printbytemaps(ext_bytemaps);
             printf("Copiando bloque %d en %d\n",indiceMemDatosBloqueOrigen,indiceBloqueDestino);
-            while(memdatos[indiceMemDatosBloqueOrigen - 4].dato[contTextDatos] != '\0'){
-               memdatos[indiceBloqueDestino-4].dato[contTextDatos]=memdatos[indiceMemDatosBloqueOrigen - 4].dato[contTextDatos];
+            while(memdatos[indiceMemDatosBloqueOrigen-4].dato[contTextDatos] != '\0'){
+               memdatos[indiceBloqueDestino-4].dato[contTextDatos]=memdatos[indiceMemDatosBloqueOrigen-4].dato[contTextDatos];
                contTextDatos++;
             }
             memdatos[indiceBloqueDestino-4].dato[contTextDatos]='\0';
