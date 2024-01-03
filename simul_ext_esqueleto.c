@@ -263,48 +263,43 @@ void Directorio(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos) {
 int Renombrar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, char *nombreantiguo, char *nombrenuevo, EXT_DATOS *memdatos){
 
    //Por default, el fichero al que le queremos cambiar el nombre no existe y el nuevo nombre esta disponible
-   int existeFichero = 0;
-   int nombreDisponible = 1;
-   int renombrarPosible = 0;
+   int existeFichero, nombreDisponible, renombrarPosible = 0;
 
-   int indexFichero = -1;
+   existeFichero = BuscaFich(directorio, inodos, nombreantiguo); // -1 si no lo encuentra, su indice si lo encuentra
+   nombreDisponible = BuscaFich(directorio, inodos, nombrenuevo);
 
-   for(int i = 0; i < MAX_FICHEROS; i++){ //Comprobar que el nombre antiguo es el nombre de un fichero de nuestra particion
-      if(strcmp(nombreantiguo, directorio[i].dir_nfich) == 0){
-         existeFichero = 1; 
-         indexFichero = i;
-         i = MAX_FICHEROS; //para salir del bucle
-      }
-   }
-   if(existeFichero == 1){ //Si el fichero con el nombre antiguo existe, comprobar que el nombre nuevo no es el nombre de ningun fichero de nuestra particion
-      for(int i = 0; i < MAX_FICHEROS; i++){
-         if(strcmp(nombrenuevo, directorio[i].dir_nfich) == 0){
-            nombreDisponible = 0;
-            i = MAX_FICHEROS; //para salir del bucle
-         }
-      }
-   }
-   else;
 
-   if(existeFichero == 0){
+   if(existeFichero == -1){
       printf("\nERROR. Fichero %s no encontrado\n", nombreantiguo);
    }
-   else if(nombreDisponible == 0){
+   else if(nombreDisponible != -1){
       printf("\nERROR. El fichero %s ya existe\n", nombrenuevo);
    }
-   else if(existeFichero == 1 && nombreDisponible == 1){
+   else if(existeFichero != -1 && nombreDisponible == -1){
+      renombrarPosible = 1;
       for(int i = 0; i < LEN_NFICH; i++){
-         directorio[indexFichero].dir_nfich[i] = nombrenuevo[i];
+         directorio[existeFichero].dir_nfich[i] = nombrenuevo[i];
       }
    }
 
-   return indexFichero;
+   return renombrarPosible;
 
 }
 
 
 int BuscaFich(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, char *nombre){
 
+   int indexFichero = -1;
+
+   for(int i = 0; i < MAX_FICHEROS; i++){
+
+      if(strcmp(nombre, directorio[i].dir_nfich) == 0){
+            indexFichero = i;
+            i = MAX_FICHEROS; //para salir del bucle
+      }
+         
+   }
+   return indexFichero;
 
 }
 
