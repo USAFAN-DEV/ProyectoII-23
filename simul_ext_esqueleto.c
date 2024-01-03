@@ -12,6 +12,7 @@ void LeeSuperBloque(EXT_SIMPLE_SUPERBLOCK *psup);
 int BuscaFich(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, char *nombre);
 void Directorio(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos);
 int Renombrar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, char *nombreantiguo, char *nombrenuevo, EXT_DATOS *memdatos);
+int Imprimir(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, EXT_DATOS *memdatos, char* nombre);
 int Borrar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, EXT_BYTE_MAPS *ext_bytemaps, EXT_SIMPLE_SUPERBLOCK *ext_superblock, char *nombre,  FILE *fich);
 int Copiar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, EXT_BYTE_MAPS *ext_bytemaps, EXT_SIMPLE_SUPERBLOCK *ext_superblock, EXT_DATOS *memdatos, char *nombreorigen, char *nombredestino,  FILE *fich);
 void Grabarinodosydirectorio(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, FILE *fich);
@@ -75,6 +76,13 @@ int main(){
 
       } while(ComprobarComando(comando, &orden, &argumento1, &argumento2) !=1);
 
+      /*for(int i = 0; i < MAX_BLOQUES_DATOS; i++){
+         printf("\n\n");
+         for(int j = 0; j < SIZE_BLOQUE; j++){
+            printf("%c", memdatos[i].dato[j]);
+         }
+      }*/
+
       if(strcmp(orden, "info") == 0){
          LeeSuperBloque(&ext_superblock);
       }
@@ -86,6 +94,9 @@ int main(){
       }
       else if(strcmp(orden, "rename") == 0){
          Renombrar(directorio, &ext_blq_inodos, argumento1, argumento2, memdatos);
+      }
+      else if(strcmp(orden, "imprimir") == 0){
+         Imprimir(directorio, &ext_blq_inodos, memdatos, argumento1);
       }
       /*
 	   if (strcmp(*orden,"dir")==0) {
@@ -302,6 +313,41 @@ int BuscaFich(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, char *nombre)
    return indexFichero;
 
 }
+
+int Imprimir(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, EXT_DATOS *memdatos, char* nombre){
+
+   int existeFichero = BuscaFich(directorio, inodos, nombre);
+   int indiceMemDatos, contTextDatos = 0;
+
+   if(existeFichero != -1){
+
+      //printf("\nIndice del Fichero = %d", existeFichero);
+
+      printf("\n");
+
+       for (int i = 0; i < MAX_NUMS_BLOQUE_INODO; i++) {
+            if (inodos->blq_inodos[directorio[existeFichero].dir_inodo].i_nbloque[i] == 0xFFFF) {
+               continue;
+            }
+            else{
+               contTextDatos = 0;
+               indiceMemDatos = inodos->blq_inodos[directorio[existeFichero].dir_inodo].i_nbloque[i];
+               //printf("Indice memdatos = %hu", indiceMemDatos);
+
+               while(memdatos[indiceMemDatos - 4].dato[contTextDatos] != '\0'){
+                  printf("%c", memdatos[indiceMemDatos - 4].dato[contTextDatos]);
+                  contTextDatos++;
+               }
+            }
+
+       }
+
+   }
+
+   printf("\n");
+
+}
+
 
 
 int Borrar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, EXT_BYTE_MAPS *ext_bytemaps, EXT_SIMPLE_SUPERBLOCK *ext_superblock, char *nombre,  FILE *fich){
