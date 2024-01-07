@@ -78,6 +78,7 @@ int main(){
 
       /*for(int i = 0; i < MAX_BLOQUES_DATOS; i++){
          printf("\n\n");
+         printf("Bloque = %d\n", i);
          for(int j = 0; j < SIZE_BLOQUE; j++){
             printf("%c", memdatos[i].dato[j]);
          }
@@ -338,11 +339,10 @@ int Imprimir(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, EXT_DATOS *mem
             else{
                contTextDatos = 0;
                indiceMemDatos = inodos->blq_inodos[directorio[existeFichero].dir_inodo].i_nbloque[i];
-               //printf("Indice memdatos = %hu", indiceMemDatos);
+               //printf("\nIndice memdatos = %hu\n", indiceMemDatos - 4);
 
-               while(memdatos[indiceMemDatos - 4].dato[contTextDatos] != '\0'){
-                  printf("%c", memdatos[indiceMemDatos - 4].dato[contTextDatos]);
-                  contTextDatos++;
+               for(int j = 0; j < SIZE_BLOQUE; j++){
+                  printf("%c", memdatos[indiceMemDatos - 4].dato[j]);
                }
             }
 
@@ -388,6 +388,7 @@ int Copiar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, EXT_BYTE_MAPS *e
    int indiceMemDatosBloqueOrigen;
    int indiceOrigen;
    int indiceBloqueDestino;
+   int indiceDirectorio;
    if((indiceOrigen=BuscaFich(directorio,inodos,nombreorigen))==-1){
       printf("No existe el fichero origen, por favor, introduzca uno que exista en el directorio\n");
       Directorio(directorio,inodos);
@@ -395,24 +396,34 @@ int Copiar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, EXT_BYTE_MAPS *e
    }
    else{
       int indiceInodoLibre=0;
-      for(int i = 1; (i < MAX_FICHEROS); i++){
-         if(directorio[i].dir_inodo==0xFFFF){
-            directorio[i].dir_inodo=i;
-            indiceInodoLibre=i;
-            i=MAX_FICHEROS;
-            printf("%d\n",indiceInodoLibre);
+
+      for(int i = 4; i < MAX_INODOS; i++){
+         if(ext_bytemaps->bmap_inodos[i] == 0){
+            indiceInodoLibre = i;
+            i = MAX_INODOS;
          }
       }
+
+      for(int i = 1; i < MAX_FICHEROS; i++){
+         //printf("Inodo del directorio: %d\n", directorio[i].dir_inodo);
+         if(directorio[i].dir_inodo==0xFFFF){
+            directorio[i].dir_inodo=indiceInodoLibre;
+            strcpy(directorio[i].dir_nfich,nombredestino);
+            indiceDirectorio = i;
+            i=MAX_FICHEROS;
+         }
+      }
+
       ext_bytemaps->bmap_inodos[indiceInodoLibre]=1;
       inodos->blq_inodos[indiceInodoLibre].size_fichero=inodos->blq_inodos[directorio[indiceOrigen].dir_inodo].size_fichero;
-      strcpy(directorio[indiceInodoLibre].dir_nfich,nombredestino);
+
       for (int j = 0; j < MAX_NUMS_BLOQUE_INODO; j++) {
-         printf("Iteracion=%d\n",j+1);
+         printf("\n\nIteracion=%d",j+1);
          if (inodos->blq_inodos[directorio[indiceOrigen].dir_inodo].i_nbloque[j] == 0xFFFF) {
             continue;
          } 
          else {
-            printf("Entrando en el else\n");
+            //printf("Entrando en el else\n");
             indiceMemDatosBloqueOrigen = inodos->blq_inodos[directorio[indiceOrigen].dir_inodo].i_nbloque[j];
             contTextDatos = 0;
             for(int i=0;i<MAX_BLOQUES_PARTICION;i++){
@@ -422,14 +433,19 @@ int Copiar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, EXT_BYTE_MAPS *e
                }
             }
             ext_bytemaps->bmap_bloques[indiceBloqueDestino]=1;
-            inodos->blq_inodos[directorio[indiceInodoLibre].dir_inodo].i_nbloque[j]=indiceBloqueDestino;
-            Printbytemaps(ext_bytemaps);
+            inodos->blq_inodos[directorio[indiceDirectorio].dir_inodo].i_nbloque[j]=indiceBloqueDestino;
+            printf("Bloque %d anadido en el inodo %d", indiceBloqueDestino, directorio[indiceDirectorio].dir_inodo);
+            //Printbytemaps(ext_bytemaps);
             printf("Copiando bloque %d en %d\n",indiceMemDatosBloqueOrigen,indiceBloqueDestino);
-            while(memdatos[indiceMemDatosBloqueOrigen-4].dato[contTextDatos] != '\0'){
+            memcpy(memdatos[indiceBloqueDestino - 4].dato, memdatos[indiceMemDatosBloqueOrigen - 4].dato, SIZE_BLOQUE);
+
+            /*while(memdatos[indiceMemDatosBloqueOrigen-4].dato[contTextDatos] != '\0'){
                memdatos[indiceBloqueDestino-4].dato[contTextDatos]=memdatos[indiceMemDatosBloqueOrigen-4].dato[contTextDatos];
+               printf("%c",memdatos[indiceBloqueDestino-4].dato[contTextDatos]);
                contTextDatos++;
             }
-            memdatos[indiceBloqueDestino-4].dato[contTextDatos]='\0';
+            memdatos[indiceBloqueDestino-4].dato[contTextDatos]='\0';*/
+            
          }
       }
    }
