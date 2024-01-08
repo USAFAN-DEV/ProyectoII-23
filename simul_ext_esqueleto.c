@@ -95,7 +95,7 @@ int main(){
          Directorio(directorio, &ext_blq_inodos);
       }
       else if(strcmp(orden, "rename") == 0){
-         Renombrar(directorio, &ext_blq_inodos, argumento1, argumento2, memdatos);
+         grabardatos = Renombrar(directorio, &ext_blq_inodos, argumento1, argumento2, memdatos);
          Grabarinodosydirectorio(directorio,&ext_blq_inodos,fent);
          GrabarByteMaps(&ext_bytemaps,fent);
          GrabarSuperBloque(&ext_superblock,fent);
@@ -104,7 +104,7 @@ int main(){
          grabardatos = 0;
       }
       else if(strcmp(orden, "copy") == 0){
-         Copiar(directorio,&ext_blq_inodos,&ext_bytemaps,&ext_superblock,memdatos,argumento1,argumento2,fent);
+         grabardatos = Copiar(directorio,&ext_blq_inodos,&ext_bytemaps,&ext_superblock,memdatos,argumento1,argumento2,fent);
          Grabarinodosydirectorio(directorio,&ext_blq_inodos,fent);
          GrabarByteMaps(&ext_bytemaps,fent);
          GrabarSuperBloque(&ext_superblock,fent);
@@ -113,10 +113,12 @@ int main(){
          grabardatos = 0;
       }
       else if(strcmp(orden, "imprimir") == 0){
-         Imprimir(directorio, &ext_blq_inodos, memdatos, argumento1);
+         if(Imprimir(directorio, &ext_blq_inodos, memdatos, argumento1) != 1){
+            printf("ERROR.El fichero no existe\n");
+         }
       }
       else if(strcmp(orden, "remove") == 0){
-         Borrar(directorio,&ext_blq_inodos,&ext_bytemaps,&ext_superblock,argumento1,fent);
+         grabardatos = Borrar(directorio,&ext_blq_inodos,&ext_bytemaps,&ext_superblock,argumento1,fent);
          Grabarinodosydirectorio(directorio,&ext_blq_inodos,fent);
          GrabarByteMaps(&ext_bytemaps,fent);
          GrabarSuperBloque(&ext_superblock,fent);
@@ -127,16 +129,11 @@ int main(){
       
       //Si el comando es salir se habrán escrito todos los metadatos
       //faltan los datos y cerrar
-      if (strcmp(orden,"salir")==0){
+      else if (strcmp(orden,"salir")==0){
          printf("Antes de grabar datos");
          GrabarDatos(memdatos,fent);
          printf("Despues de grabar datos");     
 
-         //Liberamos la memoria dinamica
-         free(comando);
-         free(orden);
-         free(argumento1);
-         free(argumento2);
          fclose(fent);
 
          return 0;
@@ -297,10 +294,12 @@ int BuscaFich(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, char *nombre)
 
 int Imprimir(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, EXT_DATOS *memdatos, char* nombre){
 
+   int errorImprimir = 0;
    int existeFichero = BuscaFich(directorio, inodos, nombre);
-   int indiceMemDatos, contTextDatos = 0;
+   int indiceMemDatos;
 
    if(existeFichero != -1){
+      errorImprimir = 1;
       printf("\n");
 
        for (int i = 0; i < MAX_NUMS_BLOQUE_INODO; i++) {
@@ -308,7 +307,6 @@ int Imprimir(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, EXT_DATOS *mem
                continue;
             }
             else{
-               contTextDatos = 0;
                indiceMemDatos = inodos->blq_inodos[directorio[existeFichero].dir_inodo].i_nbloque[i];
 
                for(int j = 0; j < SIZE_BLOQUE; j++){
@@ -318,15 +316,17 @@ int Imprimir(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, EXT_DATOS *mem
        }
    }
    printf("\n");
+
+   return errorImprimir;
 }
 
 int Borrar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, EXT_BYTE_MAPS *ext_bytemaps, EXT_SIMPLE_SUPERBLOCK *ext_superblock, char *nombre,  FILE *fich){
-   int errorOrigen=0;
+   int errorOrigen=1;
    int indiceInodoBorrar;
    if((indiceInodoBorrar=BuscaFich(directorio,inodos,nombre))==-1){
       printf("No existe el fichero origen, por favor, introduzca uno que exista en el directorio\n");
       Directorio(directorio,inodos);
-      errorOrigen=1;
+      errorOrigen=0;
    }
    else{
       inodos->blq_inodos[directorio[indiceInodoBorrar].dir_inodo].size_fichero=0;
@@ -345,16 +345,16 @@ int Borrar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, EXT_BYTE_MAPS *e
 }
 int Copiar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, EXT_BYTE_MAPS *ext_bytemaps, EXT_SIMPLE_SUPERBLOCK *ext_superblock, EXT_DATOS *memdatos, char *nombreorigen, char *nombredestino,  FILE *fich){
    
-   int errorOrigen=0; 
+   int errorOrigen=1; 
    int indiceBloqueOrigen;
    int indiceFicheroOrigen;
    int indiceBloqueDestino;
    int indiceFicheroDestino;
-   int indiceInodoLibre=0;
+   int indiceInodoLibre = -1;//para tratar errores
    if((indiceFicheroOrigen=BuscaFich(directorio,inodos,nombreorigen))==-1){
       printf("No existe el fichero origen, por favor, introduzca uno que exista en el directorio\n");
       Directorio(directorio,inodos);
-      errorOrigen=1;
+      errorOrigen=0;
    }
    else{
       if((indiceFicheroDestino = BuscaFich(directorio, inodos, nombredestino)) != -1){
@@ -381,6 +381,10 @@ int Copiar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, EXT_BYTE_MAPS *e
          }  
 
          //QUE PASA SI TODOS LOS INODOS ESTAN OCUPADOS
+         if(indiceInodoLibre == -1){
+            printf("ERROR. Todos los inodos estan ocupados.\n");
+            exit(0);
+         }
 
          //SI HAY INODO LIBRE
          ext_superblock->s_free_inodes_count--;
@@ -405,6 +409,7 @@ int Copiar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, EXT_BYTE_MAPS *e
             continue;
          } 
          else {
+            indiceBloqueDestino = -1;//para tratar errores
             indiceBloqueOrigen = inodos->blq_inodos[directorio[indiceFicheroOrigen].dir_inodo].i_nbloque[j];
             for(int i=0;i<MAX_BLOQUES_PARTICION;i++){
                if(ext_bytemaps->bmap_bloques[i]==0){
@@ -414,7 +419,10 @@ int Copiar(EXT_ENTRADA_DIR *directorio, EXT_BLQ_INODOS *inodos, EXT_BYTE_MAPS *e
             }
 
             //QUE PASA SI TODOS LOS BLOQUES ESTAN OCUPADOS
-
+            if(indiceBloqueDestino == -1){
+               printf("ERROR. Todos los bloques estan ocupados\n");
+               exit(0);
+            }
             //SI HAY BLOQUES LIBRES
             ext_superblock->s_free_blocks_count--;
 
