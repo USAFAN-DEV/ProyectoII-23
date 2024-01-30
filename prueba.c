@@ -2,47 +2,15 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define LONGITUD_COMANDO 100
-
-void cambiarString(char* string){
-
-    for(int i = 0; i < LONGITUD_COMANDO; i++){
-        string[i] = 'a';
-    }
-
-}
-
 int main(){
+    const char* p = "00010000000000000000";
+    int* ip = (int*) p;
+    int res = 0;
 
-    char comando[LONGITUD_COMANDO];
-    cambiarString(comando);
-    
-    /*for (int i = 0; i < LONGITUD_COMANDO; i++) {
-        comando[i] = malloc(100 * sizeof(char));  // Reserva memoria para cada cadena
+    for(int i = 0; i < 5; i++){
+        printf("\n%d", res);
+        res += ip[i];
     }
 
-    printf(">> ");
-    scanf("%s", comando[0]);
-    while (getchar() != '\n');  // Limpiar el buffer de entrada
-    printf("%s\n", comando[0]);
-
-     if(strcmp(comando[0], "hola") == 0){
-        printf("Comando: %s", comando[0]);
-    }
-    else{
-        printf("Comando erroneo");
-    }
-
-    // Liberar memoria al final del programa
-    for (int i = 0; i < LONGITUD_COMANDO; i++) {
-        free(comando[i]);
-    }*/
-
-    printf("%s", comando);
-
-    return 0;
-
+    printf("%d",res);
 }
-
-
-
